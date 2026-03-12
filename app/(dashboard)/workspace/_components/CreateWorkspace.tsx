@@ -50,7 +50,9 @@ export function CreateWorkspace() {
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form></form>
+          <form>
+            <Formfield
+          </form>
         </Form>
       </DialogContent>
     </Dialog>
