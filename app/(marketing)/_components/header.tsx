@@ -1,11 +1,17 @@
 "use client";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import React from "react";
 import { cn } from "@/lib/utils";
 import Logo from "@/public/logo.png";
 import Image from "next/image";
+import {
+  RegisterLink,
+  LoginLink,
+  LogoutLink,
+} from "@kinde-oss/kinde-auth-nextjs/components";
+import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
 
 const menuItems = [
   { name: "Features", href: "#link" },
@@ -17,7 +23,7 @@ const menuItems = [
 export const HeroHeader = () => {
   const [menuState, setMenuState] = React.useState(false);
   const [isScrolled, setIsScrolled] = React.useState(false);
-
+  const { user, isLoading } = useKindeBrowserClient();
   React.useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
@@ -91,33 +97,69 @@ export const HeroHeader = () => {
                   ))}
                 </ul>
               </div>
-              <div className="flex w-full flex-col space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={cn(isScrolled && "lg:hidden")}
-                  render={<Link href="#" />}
-                  nativeButton={false}
-                >
-                  <span>Login</span>
-                </Button>
-                <Button
-                  size="sm"
-                  className={cn(isScrolled && "lg:hidden")}
-                  render={<Link href="#" />}
-                  nativeButton={false}
-                >
-                  <span>Sign Up</span>
-                </Button>
-                <Button
-                  size="sm"
-                  className={cn(isScrolled ? "lg:inline-flex" : "hidden")}
-                  render={<Link href="#" />}
-                  nativeButton={false}
-                >
-                  <span>Get Started</span>
-                </Button>
-              </div>
+              {isLoading ? null : (
+                <div className="flex w-full flex-col space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit">
+                  {user ? (
+                    <>
+                      <Link
+                        className={buttonVariants({ size: "sm" })}
+                        href="/workspace"
+                      >
+                        <span>Dashboard</span>
+                      </Link>
+                      <LogoutLink
+                        className={buttonVariants({
+                          size: "sm",
+                          variant: "outline",
+                        })}
+                      >
+                        <span>Logout</span>
+                      </LogoutLink>
+                    </>
+                  ) : (
+                    <>
+                      <LoginLink
+                        className={buttonVariants({
+                          variant: "outline",
+                          size: "sm",
+                          className: cn(isScrolled && "lg:hidden"),
+                        })}
+                      >
+                        Login
+                      </LoginLink>
+                      <RegisterLink
+                        className={buttonVariants({
+                          size: "sm",
+                          className: cn(isScrolled && "lg:hidden"),
+                        })}
+                      >
+                        Sign Up
+                      </RegisterLink>
+                      <div
+                        className={cn(isScrolled ? "lg:inline-flex" : "hidden")}
+                      >
+                        {" "}
+                        <RegisterLink
+                          className={buttonVariants({
+                            size: "sm",
+                            className: cn(isScrolled && "lg:hidden"),
+                          })}
+                        >
+                          Get Started
+                        </RegisterLink>
+                      </div>
+                    </>
+                  )}
+                  <Button
+                    size="sm"
+                    className={cn(isScrolled ? "lg:inline-flex" : "hidden")}
+                    render={<Link href="#" />}
+                    nativeButton={false}
+                  >
+                    <span>Get Started</span>
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
