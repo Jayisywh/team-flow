@@ -154,7 +154,6 @@ export const HeroHeader = () => {
                     size="sm"
                     className={cn(isScrolled ? "lg:inline-flex" : "hidden")}
                     render={<Link href="#" />}
-                    nativeButton={false}
                   >
                     <span>Get Started</span>
                   </Button>
