@@ -161,23 +161,25 @@ export default function HeroSection() {
                     className="bg-foreground/10 rounded-[calc(var(--radius-xl)+0.125rem)] border p-0.5 gap-5"
                   >
                     <Button
+                      asChild
                       size="lg"
                       className="rounded-xl px-5 text-base"
-                      render={<Link href="#link" />}
-                      nativeButton={false}
                     >
-                      <span className="text-nowrap">Get Started</span>
+                      <Link href="#link">
+                        <span className="text-nowrap">Get Started</span>
+                      </Link>
                     </Button>
                   </div>
                   <Button
+                    asChild
                     key={2}
                     size="lg"
                     variant="secondary"
                     className="h-10.5 rounded-xl px-5"
-                    render={<Link href="#link" />}
-                    nativeButton={false}
                   >
-                    <span className="text-nowrap">Request a demo</span>
+                    <Link href="#link">
+                      <span className="text-nowrap">Request a demo</span>
+                    </Link>
                   </Button>
                 </AnimatedGroup>
               </div>

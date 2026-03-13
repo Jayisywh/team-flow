@@ -9,26 +9,42 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Form } from "@base-ui/react";
+
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { workSpaceSchema } from "@/app/schemas/workspace";
 
 export function CreateWorkspace() {
   const [open, setOpen] = useState(false);
-  const form = useForm();
+  const form = useForm({
+    resolver: zodResolver(workSpaceSchema),
+    defaultValues: {
+      name: "",
+    },
+  });
   function onSubmit() {
     console.log("data");
   }
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <Tooltip>
-        <TooltipTrigger>
-          <DialogTrigger>
+        <TooltipTrigger asChild>
+          <DialogTrigger asChild>
             <Button
               variant="outline"
               size="icon"
@@ -50,8 +66,21 @@ export function CreateWorkspace() {
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form>
-            <Formfield
+          <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="My Workspace" {...field}></Input>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Button type="submit">Create Workspace</Button>
           </form>
         </Form>
       </DialogContent>

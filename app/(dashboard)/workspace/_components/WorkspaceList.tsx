@@ -38,7 +38,7 @@ export const WorkspaceList = () => {
       <div className="flex flex-col gap-2">
         {workspaces.map((workspace) => (
           <Tooltip key={workspace.id}>
-            <TooltipTrigger>
+            <TooltipTrigger asChild>
               <Button
                 size="icon"
                 // className="size-12 transition-all duration-200"
