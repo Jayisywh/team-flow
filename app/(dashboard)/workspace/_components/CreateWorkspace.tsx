@@ -28,14 +28,14 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { workSpaceSchema, WorkspaceSchemaType } from "@/app/schemas/workspace";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { query } from "@/lib/orpc";
 import { toast } from "sonner";
-import { getQueryClient } from "@/lib/query/hydration";
+import { isDefinedError } from "@orpc/client";
 
 export function CreateWorkspace() {
   const [open, setOpen] = useState(false);
-  const queryClient = getQueryClient();
+  const queryClient = useQueryClient();
   const form = useForm({
     resolver: zodResolver(workSpaceSchema),
     defaultValues: {
@@ -45,6 +45,7 @@ export function CreateWorkspace() {
 
   const createWorkspaceMutation = useMutation(
     query.workspace.create.mutationOptions({
+      retry: false,
       onSuccess: (newWorkspace) => {
         toast.success(
           `Workspace ${newWorkspace.workspaceName} created successfully`,
@@ -55,7 +56,15 @@ export function CreateWorkspace() {
         form.reset();
         setOpen(false);
       },
-      onError: () => {
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          if (error.code === "RATE_LIMITED") {
+            toast.error(error.message);
+            return;
+          }
+          toast.error(error.message);
+          return;
+        }
         toast.error("Failed to create workspace, try again!");
       },
     }),
