@@ -17,6 +17,8 @@
     "@orpc/client": "^1.13.7",
     "@orpc/server": "^1.13.7",
     "@orpc/tanstack-query": "^1.13.7",
+    "@prisma/client": "^7.5.0",
+    "@prisma/adapter-pg": "^7.5.0",
     "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-slot": "^1.2.4",
     "@tanstack/react-query": "^5.90.21",
@@ -45,6 +47,7 @@
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "prisma": "^7.5.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
