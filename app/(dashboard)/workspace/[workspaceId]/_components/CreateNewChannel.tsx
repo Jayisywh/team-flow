@@ -18,6 +18,7 @@ import { query } from "@/lib/orpc";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { isDefinedError } from "@orpc/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -28,6 +29,8 @@ type FormData = z.infer<typeof channelSchema>;
 export default function CreateNewChannel() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const router = useRouter();
+  const { workspaceId } = useParams<{ workspaceId: string }>();
   const form = useForm<FormData>({
     resolver: zodResolver(channelSchema),
     defaultValues: {
@@ -38,9 +41,12 @@ export default function CreateNewChannel() {
     query.channel.create.mutationOptions({
       onSuccess: (newChannel) => {
         toast.success(`Channel ${newChannel.name} is created successfully`);
-        queryClient.invalidateQueries({queryKey: query.channel.list.queryKey()})
+        queryClient.invalidateQueries({
+          queryKey: query.channel.list.queryKey(),
+        });
         form.reset();
         setOpen(false);
+        router.push(`/workspace/${workspaceId}/channel/${newChannel.id}`);
       },
       onError: (error) => {
         if (isDefinedError(error)) {
