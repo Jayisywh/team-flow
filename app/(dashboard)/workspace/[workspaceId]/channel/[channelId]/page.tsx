@@ -13,7 +13,7 @@ const ChannelRoutePage = () => {
       <div className="flex flex-col flex-1 min-w-0">
         {/* Fixed header */}
         <ChannelHeader />
-        <div className="flex-1 overflow-hidden mb-4">
+        <div className="flex-1 min-h-0">
           <MessageList />
         </div>
         <div className="border-t bg-background p-4">
