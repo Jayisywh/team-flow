@@ -96,7 +96,7 @@ export function MessageList() {
         ref={scrollRef}
         onScroll={handleScroll}
         onWheel={handleWheel}
-        className="flex-1 h-full overflow-y-auto px-4"
+        className="flex-1 h-full overflow-y-auto px-4 flex flex-col space-y-1"
       >
         {!isFetchingNextPage && hasNextPage && (
           <div className="sticky top-0 z-10 py-2 flex justify-center bg-background/80 backdrop-blur-sm">
