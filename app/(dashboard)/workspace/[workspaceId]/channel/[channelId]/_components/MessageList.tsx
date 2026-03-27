@@ -4,13 +4,19 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { MessageItem } from "./message/MessageItem";
 import { useParams } from "next/navigation";
 import { query } from "@/lib/orpc";
-import { useMemo, useRef, useEffect } from "react";
+import { useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
+import { useAutoScroll } from "@/hooks/use-auto-scroll";
 
 export function MessageList() {
   const { channelId } = useParams<{ channelId: string }>();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
   const didInitialScrollRef = useRef(false);
+  const isNearBottomRef = useRef(true);
+  const prevScrollTopRef = useRef(0);
+  const { user } = useKindeBrowserClient();
 
   const infiniteOptions = query.message.list.infiniteOptions({
     input: (pageParam: string | undefined) => ({
@@ -18,6 +24,7 @@ export function MessageList() {
       cursor: pageParam,
       limit: 3,
     }),
+    queryKey: ["message.list", channelId],
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     select: (data) => ({
@@ -56,7 +63,14 @@ export function MessageList() {
     const el = scrollRef.current;
     if (!el) return;
 
-    if (el.scrollTop <= 50) {
+    const prevScrollTop = prevScrollTopRef.current;
+    prevScrollTopRef.current = el.scrollTop;
+
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    isNearBottomRef.current = distanceFromBottom < 150;
+
+    const movedUp = el.scrollTop < prevScrollTop;
+    if (el.scrollTop <= 50 && movedUp) {
       loadOlderMessages();
     }
   };
@@ -71,24 +85,24 @@ export function MessageList() {
     const scrollingUp = event.deltaY < 0;
 
     if (scrollingUp && atTop && noOverflow) {
-      event.preventDefault();
       loadOlderMessages();
     }
   };
 
-  // Scroll to bottom only on the initial load.
-  // Keeping this on every data update breaks reverse infinite scrolling.
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el || didInitialScrollRef.current) return;
-
-    el.scrollTop = el.scrollHeight;
-    didInitialScrollRef.current = true;
-  }, [data]);
-
   const items = useMemo(() => {
     return data?.pages.flatMap((p) => p.items) ?? [];
   }, [data]);
+
+  const lastMessage = items.at(-1);
+  useAutoScroll({
+    containerRef: scrollRef,
+    bottomRef,
+    lastMessageId: lastMessage?.id ?? null,
+    lastMessageAuthorId: lastMessage?.authorId,
+    currentUserId: user?.id ?? null,
+    isNearBottomRef,
+    didInitialScrollRef,
+  });
 
   return (
     <div className="h-full">
@@ -113,6 +127,7 @@ export function MessageList() {
         {items.map((message) => (
           <MessageItem key={message.id} message={message} />
         ))}
+        <div ref={bottomRef} />
         {!isFetchingNextPage && isFetching ? (
           <>
             <div className="py-2 text-center text-sm text-muted-foreground">
