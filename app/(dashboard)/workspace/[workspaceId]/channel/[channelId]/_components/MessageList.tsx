@@ -1,6 +1,6 @@
 "use client";
 
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { MessageItem } from "./message/MessageItem";
 import { useParams } from "next/navigation";
 import { query } from "@/lib/orpc";
@@ -104,6 +104,10 @@ export function MessageList() {
     didInitialScrollRef,
   });
 
+  const {
+    data: { user: currentUser },
+  } = useSuspenseQuery(query.workspace.list.queryOptions());
+
   return (
     <div className="h-full">
       <div
@@ -125,7 +129,11 @@ export function MessageList() {
           </div>
         )}
         {items.map((message) => (
-          <MessageItem key={message.id} message={message} />
+          <MessageItem
+            key={message.id}
+            message={message}
+            currentUserId={currentUser.id}
+          />
         ))}
         <div ref={bottomRef} />
         {!isFetchingNextPage && isFetching ? (

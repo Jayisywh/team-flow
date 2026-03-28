@@ -8,7 +8,7 @@ import { ReactNode } from "react";
 
 interface RichTextEditorProps {
   field: any;
-  footerLeft: ReactNode;
+  footerLeft?: ReactNode;
   sendButton: ReactNode;
 }
 
