@@ -4,6 +4,7 @@ export const messageSchema = z.object({
   channelId: z.string(),
   content: z.string(),
   imageUrl: z.string().url().optional(),
+  threadId: z.string().optional(),
 });
 
 export const updateMessageSchema = z.object({
