@@ -5,11 +5,43 @@ import { requireAuth } from "../middlewares/auth";
 import { base } from "../middlewares/base";
 import { requireWorkspaceMiddleware } from "../middlewares/workspace";
 import prisma from "@/lib/prisma";
-import { messageSchema, updateMessageSchema } from "../schemas/message";
+import {
+  GroupedReactionSchema,
+  GroupedReactionSchemaType,
+  messageSchema,
+  toggleReactionSchema,
+  updateMessageSchema,
+} from "../schemas/message";
 import { getAvatar } from "@/lib/get-avatar";
 import { Message } from "@/lib/generated/prisma/client";
 import { readSecurityMiddleware } from "../middlewares/arcjet/read";
 import { MessageListItem } from "@/lib/types";
+
+const groupReaction = (
+  reactions: { emoji: string; userId: string }[],
+  userId: string,
+): GroupedReactionSchemaType[] => {
+  const reactionMap = new Map<string, { count: number; reactByMe: boolean }>();
+  for (const reaction of reactions) {
+    const existing = reactionMap.get(reaction.emoji);
+    if (existing) {
+      existing.count++;
+      if (reaction.userId === userId) {
+        existing.reactByMe = true;
+      }
+    } else {
+      reactionMap.set(reaction.emoji, {
+        count: 1,
+        reactByMe: reaction.userId === userId,
+      });
+    }
+  }
+  return Array.from(reactionMap.entries()).map(([emoji, data]) => ({
+    emoji,
+    count: data.count,
+    reactedByMe: data.reactByMe,
+  }));
+};
 
 export const createMessage = base
   .use(requireAuth)
@@ -123,6 +155,12 @@ export const listMessages = base
             replies: true,
           },
         },
+        MessageReaction: {
+          select: {
+            emoji: true,
+            userId: true,
+          },
+        },
       },
     });
     const items: MessageListItem[] = messages.map((m) => ({
@@ -137,7 +175,14 @@ export const listMessages = base
       authorName: m.authorName,
       channelId: m.channelId,
       threadId: m.threadId,
-      repliesCount: m._count.replies,
+      replyCount: m._count.replies,
+      reactions: groupReaction(
+        m.MessageReaction.map((r) => ({
+          emoji: r.emoji,
+          userId: r.userId,
+        })),
+        context.user.id,
+      ),
     }));
     const nextCursor =
       messages.length === limit ? messages[messages.length - 1].id : undefined;
@@ -216,8 +261,8 @@ export const listThreadReplies = base
   )
   .output(
     z.object({
-      parent: z.custom<Message>(),
-      replyMessages: z.array(z.custom<Message>()),
+      parent: z.custom<MessageListItem>(),
+      replyMessages: z.array(z.custom<MessageListItem>()),
     }),
   )
   .handler(async ({ input, context, errors }) => {
@@ -226,6 +271,19 @@ export const listThreadReplies = base
         id: input.messageId,
         Channel: {
           workspaceId: context.workspace.orgCode,
+        },
+      },
+      include: {
+        _count: {
+          select: {
+            replies: true,
+          },
+        },
+        MessageReaction: {
+          select: {
+            emoji: true,
+            userId: true,
+          },
         },
       },
     });
@@ -237,13 +295,152 @@ export const listThreadReplies = base
         threadId: input.messageId,
       },
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      include: {
+        _count: {
+          select: {
+            replies: true,
+          },
+        },
+        MessageReaction: {
+          select: {
+            emoji: true,
+            userId: true,
+          },
+        },
+      },
     });
-    const parent = {
-      ...parentMessage,
+    const parent: MessageListItem = {
+      id: parentMessage.id,
+      authorAvatar: parentMessage.authorAvatar,
+      authorEmail: parentMessage.authorEmail,
+      authorId: parentMessage.authorId,
+      authorName: parentMessage.authorName,
+      imageUrl: parentMessage.imageUrl,
+      channelId: parentMessage.channelId,
+      createdAt: parentMessage.createdAt,
+      updatedAt: parentMessage.updatedAt,
+      threadId: parentMessage.threadId,
+      replyCount: parentMessage._count.replies,
+      content: parentMessage.content,
+      reactions: groupReaction(
+        parentMessage.MessageReaction.map((r) => ({
+          emoji: r.emoji,
+          userId: r.userId,
+        })),
+        context.user.id,
+      ),
     };
-    const replyMessages = replies.map((reply) => ({ ...reply }));
+    const replyMessages: MessageListItem[] = replies.map((reply) => ({
+      id: reply.id,
+      authorAvatar: reply.authorAvatar,
+      authorEmail: reply.authorEmail,
+      authorId: reply.authorId,
+      authorName: reply.authorName,
+      imageUrl: reply.imageUrl,
+      channelId: reply.channelId,
+      createdAt: reply.createdAt,
+      updatedAt: reply.updatedAt,
+      threadId: reply.threadId,
+      content: reply.content,
+      replyCount: reply._count.replies,
+      reactions: groupReaction(
+        reply.MessageReaction.map((r) => ({
+          emoji: r.emoji,
+          userId: r.userId,
+        })),
+        context.user.id,
+      ),
+    }));
     return {
       parent,
       replyMessages,
+    };
+  });
+
+export const toggleReaction = base
+  .use(requireAuth)
+  .use(requireWorkspaceMiddleware)
+  .use(standardSecurityMiddleware)
+  .use(writeSecurityMiddleware)
+  .route({
+    method: "POST",
+    path: "/messages/:messageId/reaction",
+    summary: "toggle a reaction",
+    tags: ["messages"],
+  })
+  .input(toggleReactionSchema)
+  .output(
+    z.object({
+      messageId: z.string(),
+      reactions: z.array(GroupedReactionSchema),
+    }),
+  )
+  .handler(async ({ context, errors, input }) => {
+    const message = await prisma.message.findFirst({
+      where: {
+        id: input.messageId,
+        Channel: {
+          workspaceId: context.workspace.orgCode,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+    if (!message) {
+      throw errors.NOT_FOUND();
+    }
+    const inserted = await prisma.messageReaction.createMany({
+      data: [
+        {
+          messageId: input.messageId,
+          emoji: input.emoji,
+          userAvatar: getAvatar(context.user.picture, context.user.email!),
+          userEmail: context.user.email!,
+          userId: context.user.id,
+          userName: context.user.given_name ?? "John Doe",
+        },
+      ],
+      skipDuplicates: true,
+    });
+    if (inserted.count === 0) {
+      await prisma.messageReaction.deleteMany({
+        where: {
+          messageId: input.messageId,
+          emoji: input.emoji,
+          userId: context.user.id,
+        },
+      });
+    }
+    const updated = await prisma.message.findUnique({
+      where: {
+        id: input.messageId,
+      },
+      include: {
+        MessageReaction: {
+          select: {
+            emoji: true,
+            userId: true,
+          },
+        },
+        _count: {
+          select: {
+            replies: true,
+          },
+        },
+      },
+    });
+    if (!updated) {
+      throw errors.NOT_FOUND();
+    }
+    return {
+      messageId: updated.id,
+      reactions: groupReaction(
+        (updated.MessageReaction ?? []).map((r) => ({
+          emoji: r.emoji,
+          userId: r.userId,
+        })),
+        context.user.id,
+      ),
     };
   });

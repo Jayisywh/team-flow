@@ -4,6 +4,7 @@ import {
   createMessage,
   listMessages,
   listThreadReplies,
+  toggleReaction,
   updateMessage,
 } from "./message";
 import { createWorkspace, listWorkspaces } from "./workspace";
@@ -28,6 +29,9 @@ export const router = {
     update: updateMessage,
     thread: {
       list: listThreadReplies,
+    },
+    reaction: {
+      toggle: toggleReaction,
     },
   },
 };

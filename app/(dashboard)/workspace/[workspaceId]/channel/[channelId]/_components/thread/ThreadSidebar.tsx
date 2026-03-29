@@ -31,7 +31,7 @@ export function ThreadSidebar({ user }: ThreadSidebarProps) {
       enabled: Boolean(selectedThreadId),
     }),
   );
-  const repliesCount = data?.replyMessages.length;
+  const replyCount = data?.replyMessages.length;
   const isNearBottom = (el: HTMLDivElement) =>
     el.scrollHeight - el.scrollTop - el.clientHeight <= 80;
   const handleScroll = () => {
@@ -40,10 +40,10 @@ export function ThreadSidebar({ user }: ThreadSidebarProps) {
     setIsAtBottom(isNearBottom(el));
   };
   useEffect(() => {
-    if (!repliesCount) return;
-    const previousRepliesCount = lastMessageCountRef.current;
+    if (!replyCount) return;
+    const previousreplyCount = lastMessageCountRef.current;
     const el = scrollRef.current;
-    if (previousRepliesCount > 0 && repliesCount > previousRepliesCount) {
+    if (previousreplyCount > 0 && replyCount > previousreplyCount) {
       requestAnimationFrame(() => {
         bottomRef.current?.scrollIntoView({
           block: "end",
@@ -51,8 +51,8 @@ export function ThreadSidebar({ user }: ThreadSidebarProps) {
         });
       });
     }
-    lastMessageCountRef.current = repliesCount;
-  }, [repliesCount]);
+    lastMessageCountRef.current = replyCount;
+  }, [replyCount]);
   if (isLoading) {
     return <ThreadSidebarSkeleton />;
   }
@@ -110,15 +110,19 @@ export function ThreadSidebar({ user }: ThreadSidebarProps) {
           </div>
           <div className="p-2">
             <p className="text-xs text-muted-foreground mb-3 px-2">
-              {repliesCount === 0
+              {replyCount === 0
                 ? "No replies"
-                : repliesCount === 1
+                : replyCount === 1
                   ? "1 reply"
-                  : `${repliesCount} relpies`}
+                  : `${replyCount} relpies`}
             </p>
             <div className="space-y-1">
               {data.replyMessages.map((reply) => (
-                <ThreadReply key={reply.id} message={reply} />
+                <ThreadReply
+                  key={reply.id}
+                  message={reply}
+                  selectedThreadId={selectedThreadId!}
+                />
               ))}
               <div ref={bottomRef} />
             </div>
