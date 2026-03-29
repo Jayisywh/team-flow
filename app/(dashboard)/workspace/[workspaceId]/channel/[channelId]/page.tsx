@@ -9,9 +9,12 @@ import { query } from "@/lib/orpc";
 import { toast } from "sonner";
 import { KindeUser } from "@kinde-oss/kinde-auth-nextjs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ThreadSidebar } from "./_components/thread/ThreadSidebar";
+import { ThreadProvider, useThread } from "@/providers/ThreadProvider";
 
 const ChannelRoutePage = () => {
   const { channelId } = useParams<{ channelId: string }>();
+  const { isOpen } = useThread();
   const { data, error, isLoading } = useQuery(
     query.channel.get.queryOptions({
       input: {
@@ -21,9 +24,6 @@ const ChannelRoutePage = () => {
   );
   if (error) {
     toast.error("An unexpected error occured");
-  }
-  if (!data) {
-    return null;
   }
   return (
     <div className="flex h-screen w-full">
@@ -40,7 +40,7 @@ const ChannelRoutePage = () => {
             </div>
           </div>
         ) : (
-          <ChannelHeader channelName={data?.channelName} />
+          <ChannelHeader channelName={data?.channelName ?? ""} />
         )}
 
         <div className="flex-1 min-h-0">
@@ -54,8 +54,21 @@ const ChannelRoutePage = () => {
           />
         </div>
       </div>
+      {isOpen && (
+        <ThreadSidebar
+          user={data?.currentUser as KindeUser<Record<string, unknown>>}
+        />
+      )}
     </div>
   );
 };
 
-export default ChannelRoutePage;
+const ChannelPage = () => {
+  return (
+    <ThreadProvider>
+      <ChannelRoutePage />
+    </ThreadProvider>
+  );
+};
+
+export default ChannelPage;

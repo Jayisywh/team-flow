@@ -9,7 +9,7 @@ interface MessageComposerProps {
   value: string;
   onChange: (next: string) => void;
   onSubmit: () => void;
-  isSubmitting: boolean;
+  isSubmitting?: boolean;
   upload: UseAttachmentUploadType;
 }
 
