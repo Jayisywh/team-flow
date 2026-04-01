@@ -56,7 +56,7 @@ export function ThreadReplyForm({ threadId, user }: ThreadReplyFormProps) {
         type Infinitemessages = InfiniteData<MessagePage>;
         await queryClient.cancelQueries({ queryKey: listOptions.queryKey });
         const previous = queryClient.getQueryData(listOptions.queryKey);
-        const optimstic: Message = {
+        const optimstic: MessageListItem = {
           id: `optimstic:${crypto.randomUUID()}`,
           content: data.content,
           createdAt: new Date(),
@@ -68,6 +68,8 @@ export function ThreadReplyForm({ threadId, user }: ThreadReplyFormProps) {
           channelId: data.channelId,
           threadId: data.threadId!,
           imageUrl: data.imageUrl ?? "",
+          replyCount: 0,
+          reactions: [],
         };
         queryClient.setQueryData(listOptions.queryKey, (old) => {
           if (!old) return old;
